@@ -14,6 +14,8 @@ The Markdir specification requires one view. markdir.sh implements the "bubble" 
 
 Cool thing: If you're documenting software or other digital materials (except markdown!), you can put your documentation in the same .mdir folders as the thing you're documenting. Except if you're documenting something written in markdown. In that case, make sure you exclude folders containing markdown by not giving them the .mdir extension.
 
+This documentation is itself written in Markdir.
+
 ## FAQ
 
 ### Why does Markdir exist?
