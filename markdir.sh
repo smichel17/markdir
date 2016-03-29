@@ -44,9 +44,9 @@ function build_directory() {
     # build subdir, then add its files
     local dir
     while IFS= read -r -d '' dir; do
-        build_directory ${dir}
+        build_directory "${dir}"
         for file in "${dir}"/*.md; do
-            cat ${file} >> "${1}"/"${file##*/}"
+            cat "${file}" >> "${1}"/"${file##*/}"
         done
     done < <(find "${1}"/*"${ext}" -maxdepth 0 -type d -print0)
 }
@@ -85,7 +85,7 @@ fi
 # Simple sanitization, then parse!
 for rootdir in "${dirlist[@]}"; do
     rootdir="${rootdir%/}";
-    # Needed so a directory named "mdir" doesn't screw you
+    # Get the true dir extension. Stops dir named "mdir" from screwing you
     dirext="${rootdir%${ext}}"; dirext="${rootdir#${dirext}}"
     if ! [ -e "${rootdir}" ]; then
         echo "${rootdir}: Directory not found" >&2
