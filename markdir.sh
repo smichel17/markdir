@@ -17,13 +17,57 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-function add_mdir() {
-    printf "## ${1}\n\n" >> "${3}"
-    cat "${2}" >> "${3}"
-    printf "\n" >> "${3}"
+usage() {
+    echo "Usage: ${0} [OPTION...] DIRECTORY..."
+    echo ""
+    echo "  -h, --help   Print this message"
+    echo "  -f           Process all directories regardless of extension"
+    exit 1
 }
 
-function build_directory() {
+# Defaults
+ext=".mdir"
+dirlist=()
+
+main() {
+    # Simple sanitization, then parse!
+    for rootdir in "${dirlist[@]}"; do
+        rootdir="${rootdir%/}";
+        # Get the true dir extension. Stops dir named "mdir" from screwing you
+        dirext="${rootdir%${ext}}"; dirext="${rootdir#${dirext}}"
+        if ! [ -e "${rootdir}" ]; then
+            echo "${rootdir}: Directory not found" >&2
+        elif ! [ -d "${rootdir}" ]; then
+            echo "${rootdir}: Not a directory" >&3
+        elif [ "${dirext}" == "${ext}" ]; then
+            build_directory "${rootdir}"
+        else
+            echo "${rootdir}: not a .mdir. Use -f to ignore directory extensions."
+        fi
+    done
+}
+
+parse_args() {
+    while [ "$#" -ne 0 ]; do
+        case $1 in
+            -f)
+                ext=""; shift ;;
+            -h|--help)
+                usage ;;
+            .|./)
+                dirlist+=(${PWD}); shift ;;
+            *)
+                dirlist+=("${1}"); shift ;;
+        esac
+    done
+
+    # No directory provided, so use current one
+    if [ ${#dirlist[@]} -eq 0 ]; then
+        dirlist+=${PWD}
+    fi
+}
+
+build_directory() {
     # spring cleaning
     rm "${1}"/*.md
     local title
@@ -51,49 +95,10 @@ function build_directory() {
     done < <(find "${1}"/*"${ext}" -maxdepth 0 -type d -print0)
 }
 
-function usage() {
-    echo "Usage: ${0} [OPTION...] DIRECTORY..."
-    echo ""
-    echo "  -h, --help   Print this message"
-    echo "  -f           Process all directories regardless of extension"
-    exit 1
+add_mdir() {
+    printf "## ${1}\n\n" >> "${3}"
+    cat "${2}" >> "${3}"
+    printf "\n" >> "${3}"
 }
 
-# Defaults
-ext=".mdir"
-dirlist=()
-
-# Parse Args
-while [ "$#" -ne 0 ]; do
-    case $1 in
-        -f)
-            ext=""; shift ;;
-        -h|--help)
-            usage ;;
-        .|./)
-            dirlist+=(${PWD}); shift ;;
-        *)
-            dirlist+=("${1}"); shift ;;
-    esac
-done
-
-# No directory provided, so use current one
-if [ ${#dirlist[@]} -eq 0 ]; then
-    dirlist+=${PWD}
-fi
-
-# Simple sanitization, then parse!
-for rootdir in "${dirlist[@]}"; do
-    rootdir="${rootdir%/}";
-    # Get the true dir extension. Stops dir named "mdir" from screwing you
-    dirext="${rootdir%${ext}}"; dirext="${rootdir#${dirext}}"
-    if ! [ -e "${rootdir}" ]; then
-        echo "${rootdir}: Directory not found" >&2
-    elif ! [ -d "${rootdir}" ]; then
-        echo "${rootdir}: Not a directory" >&3
-    elif [ "${dirext}" == "${ext}" ]; then
-        build_directory "${rootdir}"
-    else
-        echo "${rootdir}: not a .mdir. Use -f to ignore directory extensions."
-    fi
-done
+main "$@"
