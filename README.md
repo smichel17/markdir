@@ -1,5 +1,7 @@
 # markdir
 
+## NOTE: current version is NOT TESTED. Use at your own risk
+
 ## About
 
 Markdir is an easy to use, flexible, and comprehensive standard for documentation.
