@@ -1,8 +1,8 @@
 #!/bin/bash
 
 process_directory() {
-    echo "DIR: $1"
-    process_subdirs "$1"
+    echo "PROCESSING DIR: $1"
+    process_subdirectories "$1"
     process_files "$1"
 }
 

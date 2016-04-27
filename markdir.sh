@@ -31,7 +31,7 @@ main() {
     set_defaults
     parse_args "$@"
     echo "DONE PARSING"
-    for dir in "${Mdirs[@]%/}"; do
+    for dir in "${Mdirs[@]}"; do
         echo "TOP DIR: ${dir}"
         clean_dir $dir
         for filter in "${Filters[@]}"; do
@@ -61,6 +61,7 @@ parse_args() {
                     Filters+="${2}"
                     shift 2 ;;
             -f)
+                    echo "FORCED"
                     MdirExt="/"
                     shift ;;
             # -+(f|r|s))
@@ -114,20 +115,25 @@ clean_dir() {
     find "${OutDir}" -name "*.md" -exec rm {} +
 }
 
-process_subdirs() {
-    echo "DIR: ${1}"
-    subdirs=( "${1%/}/*${MdirExt}"/ )
+process_subdirectories() {
+    shopt -s nullglob
+    echo "PROCESSING SUBDIRS OF: ${1}"
+    subdirs=( "${1%/}"/*/ )
     for dir in "${subdirs[@]}"; do
-        echo "SUBDIR: $dir"
-        # ( process_directory "${dir}" )
+        echo "PROCESSING: $dir"
+        ( process_directory "${dir}" )
+        echo "DONE PROCESSING: $dir"
     done
 }
 
 process_files() {
+    shopt -s nullglob
     files=( "${1%/}"/* )
     for file in "${files[@]}"; do
         if [ -f "$file" ]; then
-            ( OutFile="${OutDir}/${file}.md"; process_file "${file}" )
+            OutFile="${OutDir}${file}.md"
+            echo "OUTFILE: $OutFile"
+            process_file "${file}"
         fi
     done
 }
