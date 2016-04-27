@@ -30,48 +30,53 @@ usage() {
 main() {
     set_defaults
     parse_args "$@"
-    for dir in "${mdirs[@]%/}"; do
+    echo "DONE PARSING"
+    for dir in "${Mdirs[@]%/}"; do
+        echo "TOP DIR: ${dir}"
         clean_dir $dir
-        for filter in "${filters[@]}"; do
-            ( source "$filter"; process_dir "$dir" ) # process_dir provided by filter
+        for filter in "${Filters[@]}"; do
+            echo "FILTER: ${filter}"
+            ( source "$filter"; process_directory "$dir" ) # process_directory provided by filter
         done
     done
 }
 
 set_defaults() {
     OutDir="${PWD%/}/"
-    MdirExt=".mdir"
+    MdirExt=".mdir/"
     Mdirs=()
     Filters=()
 }
 
 parse_args() {
+    echo "PARSING"
     while [ "$#" -ne 0 ]; do
         case $1 in
             -h|--help)
                     usage ;;
             -o|--out|--output|--output_folder|--output_dir|--output_directory)
                     OutDir="${2}"
-                    shift; shift ;;
+                    shift 2 ;;
             -x|--execute)
                     Filters+="${2}"
-                    shift; shift ;;
+                    shift 2 ;;
             -f)
-                    MdirExt="";
+                    MdirExt="/"
                     shift ;;
-            -+(f|r|s))
-                    echo "ERROR: ${1} is not supported... yet! Hang in there, it's planned. "
-                    shift ;;
-            .|./)
-                    add_mdir "${PWD}"; shift ;;
+            # -+(f|r|s))
+            #         echo "ERROR: ${1} is not supported... yet! Hang in there, it's planned. "
+            #         shift ;;
             *)
-                    add_mdir "${1}"; shift ;;
+                    add_mdir "${1%/}/"; shift ;;
         esac
     done
 
-    [[ ${#mdirs[@]} -eq 0 ]] && { echo "ERROR: No source folder selected."; usage; }
-    [[ ${#mdirs[@]} -ge 2 ]] && { echo "ERROR: Too many source folders."; usage; }
-    [[ ${#filters[@]} -eq 0 ]] && { echo "ERROR: No filter selected."; usage; }
+    echo "PARSED"
+    echo "MDIRS: ${Mdirs[@]}"
+    echo "FILTERS: ${Filters[@]}"
+    [[ ${#Mdirs[@]} -eq 0 ]] && { echo "ERROR: No source folder selected."; usage; }
+    [[ ${#Mdirs[@]} -ge 2 ]] && { echo "ERROR: Too many source folders."; usage; }
+    [[ ${#Filters[@]} -eq 0 ]] && { echo "ERROR: No filter selected."; usage; }
 }
 
 add_mdir() {
@@ -96,26 +101,33 @@ validate_dir() {
     
     # Find the extension in a way that can distinguish "name.mdir" from "mdir"
     dirExt="${1%${MdirExt}}"     # get dirname sans extension
+    echo "DIRNAME: $dirExt"
     dirExt="${1#${dirExt}}"     # get extension sans dirname
+    echo "DIREXT: $dirExt"
      
-    [[ "${dirExt}" == "${Ext}" ]] && return 0 || return 3
+    [[ "${dirExt}" == "${MdirExt}" ]] && return 0 || return 3
     return -1
 }
 
 clean_dir() {
-    find -name *${Ext} -exec rm {} +
+    echo "CLEANING DIR: $OutDir"
+    find "${OutDir}" -name "*.md" -exec rm {} +
 }
 
 process_subdirs() {
-    for dir in ( "${1%/}/"*"${MdirExt}"/ ); do
-        ( process_dir "${dir}" )
+    echo "DIR: ${1}"
+    subdirs=( "${1%/}/*${MdirExt}"/ )
+    for dir in "${subdirs[@]}"; do
+        echo "SUBDIR: $dir"
+        # ( process_directory "${dir}" )
     done
 }
 
 process_files() {
-    for file in ( "${1%/}"/* ); do
-        if [ -f $file ]; then
-            ( OutFile="${OutDir}/${file}.md"; process_file "${file}"
+    files=( "${1%/}"/* )
+    for file in "${files[@]}"; do
+        if [ -f "$file" ]; then
+            ( OutFile="${OutDir}/${file}.md"; process_file "${file}" )
         fi
     done
 }
