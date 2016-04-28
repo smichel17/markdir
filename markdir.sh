@@ -32,16 +32,18 @@ main() {
     parse_args "$@"
     echo "DONE PARSING"
     for dir in "${Mdirs[@]}"; do
+        CurrentDir="$dir"
         echo "TOP DIR: ${dir}"
         clean_dir $dir
         for filter in "${Filters[@]}"; do
             echo "FILTER: ${filter}"
-            ( source "$filter"; process_directory "$dir" ) # process_directory provided by filter
+            ( source "$filter"; process_directory "$dir" )
         done
     done
 }
 
 set_defaults() {
+    CurrentDir="./"
     OutDir="${PWD%/}/"
     MdirExt=".mdir/"
     Mdirs=()
@@ -116,7 +118,7 @@ clean_dir() {
 }
 
 process_subdirectories() {
-    shopt -s nullglob
+    shopt -s nullglob # Stops infinite loops if there are no matching files
     echo "PROCESSING SUBDIRS OF: ${1}"
     subdirs=( "${1%/}"/*/ )
     for dir in "${subdirs[@]}"; do
@@ -127,13 +129,16 @@ process_subdirectories() {
 }
 
 process_files() {
-    shopt -s nullglob
+    echo "PROCESS $1"
+    shopt -s nullglob # If there's no matches, don't return any
+    echo "LALA"
+    echo ${1%/}/*
     files=( "${1%/}"/* )
+    echo "FILES: ${files[@]}"
+    shift
     for file in "${files[@]}"; do
         if [ -f "$file" ]; then
-            OutFile="${OutDir}${file}.md"
-            echo "OUTFILE: $OutFile"
-            process_file "${file}"
+            process_file "${file}" "$@"
         fi
     done
 }
