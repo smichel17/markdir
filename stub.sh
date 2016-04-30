@@ -2,11 +2,10 @@
 
 process_Dir() {
     echo "PROCESSING DIR: $Dir"
-    echo "DIR: $Dir"
-    process_subdirectories
-    # process_files "$1"
+    process_subdirs
+    process_FILES
 }
 
 process_File() {
-    echo "FILE: $1"
+    echo "FILE: $File"
 }

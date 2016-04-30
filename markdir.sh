@@ -30,9 +30,8 @@ main() {
     FILTERS=()
     parse_args "$@"
     for Filter in "${FILTERS[@]}"; do
-        if [[ -e "$Filter" ]]; then
-            ( source "$Filter"
-            echo "Process ${DIRS[@]}"
+        if [[ -e "$Filter" ]]; then (
+            source "$Filter"
             process_DIRS )
         else
             echo "Filter $Filter not found"
@@ -88,14 +87,13 @@ parse_args() {
 }
 
 process_DIRS() {
-    echo "PROCESS_DIRS: ${DIRS[@]}"
     for Dir in "${DIRS[@]}"; do
         DirName="${Dir%${MDIREXT}}"
         DirExt="${Dir#${DirName}}" # Needed to distinguish "x.mdir" from "mdir"
         DirName="${DirName##/}"
-        if [[ -e "${Dir}" ]]; then
+        if [[ ! -e "${Dir}" ]]; then
             echo "${Dir}: Directory not found"
-        elif [[ -d "${Dir}" ]]; then
+        elif [[ ! -d "${Dir}" ]]; then
             echo "${Dir}: Not a directory"
         elif [[ "${DirExt}" == "${MDIREXT}" ]]; then
             ( process_Dir "$@" )
@@ -111,14 +109,22 @@ process_subdirs() { (
     process_DIRS "$@"
 ) }
 
-process_FILES() { (
-    shopt -s nullglob # If there's no matches, don't return any
-    FILES=( "${Dir%/}"/* )
+process_FILES() {
     for File in "${FILES[@]}"; do
         if [ -f "$File" ]; then
-            process_file "$@"
+            FullFileName="${File##/}"
+            FileName="${FullFileName%%.*}"
+            FileExt="${FullFileName#${FileName}}" # Tell "x.mdir" from "mdir"
+            ( process_File "$@" )
         fi
     done
+}
+
+process_files() { (
+    shopt -s nullglob # If there's no matches, don't return any
+    FILES=( "${Dir%/}"/* )
+    process_FILES "$@"
 ) }
+
 
 main "$@"
