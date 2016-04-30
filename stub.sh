@@ -1,11 +1,12 @@
 #!/bin/bash
 
-process_directory() {
-    echo "PROCESSING DIR: $1"
-    process_subdirectories "$1"
-    process_files "$1"
+process_Dir() {
+    echo "PROCESSING DIR: $Dir"
+    echo "DIR: $Dir"
+    process_subdirectories
+    # process_files "$1"
 }
 
-process_file() {
+process_File() {
     echo "FILE: $1"
 }

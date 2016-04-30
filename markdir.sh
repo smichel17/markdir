@@ -17,8 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Syntax Guide: localVariableName GlobalVariableName function_name
-
 usage() {
     echo "Usage: ${0} [OPTION...] DIRECTORY..."
     echo ""
@@ -28,119 +26,99 @@ usage() {
 }
 
 main() {
-    set_defaults
+    DIRS=()
+    FILTERS=()
     parse_args "$@"
-    echo "DONE PARSING"
-    for dir in "${Mdirs[@]}"; do
-        CurrentDir="$dir"
-        echo "TOP DIR: ${dir}"
-        clean_dir $dir
-        for filter in "${Filters[@]}"; do
-            echo "FILTER: ${filter}"
-            ( source "$filter"; process_directory "$dir" )
-        done
-    done
-}
-
-set_defaults() {
-    CurrentDir="./"
-    OutDir="${PWD%/}/"
-    MdirExt=".mdir/"
-    Mdirs=()
-    Filters=()
-}
-
-parse_args() {
-    echo "PARSING"
-    while [ "$#" -ne 0 ]; do
-        case $1 in
-            -h|--help)
-                    usage ;;
-            -o|--out|--output|--output_folder|--output_dir|--output_directory)
-                    OutDir="${2}"
-                    shift 2 ;;
-            -x|--execute)
-                    Filters+="${2}"
-                    shift 2 ;;
-            -f)
-                    echo "FORCED"
-                    MdirExt="/"
-                    shift ;;
-            # -+(f|r|s))
-            #         echo "ERROR: ${1} is not supported... yet! Hang in there, it's planned. "
-            #         shift ;;
-            *)
-                    add_mdir "${1%/}/"; shift ;;
-        esac
-    done
-
-    echo "PARSED"
-    echo "MDIRS: ${Mdirs[@]}"
-    echo "FILTERS: ${Filters[@]}"
-    [[ ${#Mdirs[@]} -eq 0 ]] && { echo "ERROR: No source folder selected."; usage; }
-    [[ ${#Mdirs[@]} -ge 2 ]] && { echo "ERROR: Too many source folders."; usage; }
-    [[ ${#Filters[@]} -eq 0 ]] && { echo "ERROR: No filter selected."; usage; }
-}
-
-add_mdir() {
-    validate_dir "${1}"
-    case $? in  # return value
-        0)
-            Mdirs+="${1}" ;;
-        1)
-            echo "${rootdir}: Directory not found" ;;
-        2)
-            echo "${rootdir}: Not a directory" ;;
-        3)
-            echo "${rootdir}: not a .mdir. Use -f to ignore directory extensions." ;;
-        *)
-            echo "${rootdir}: Bad file name, for an unknown reason"
-    esac
-}
-
-validate_dir() {
-    [[ -e "${1}" ]] || return 1
-    [[ -d "${1}" ]] || return 2
-    
-    # Find the extension in a way that can distinguish "name.mdir" from "mdir"
-    dirExt="${1%${MdirExt}}"     # get dirname sans extension
-    echo "DIRNAME: $dirExt"
-    dirExt="${1#${dirExt}}"     # get extension sans dirname
-    echo "DIREXT: $dirExt"
-     
-    [[ "${dirExt}" == "${MdirExt}" ]] && return 0 || return 3
-    return -1
-}
-
-clean_dir() {
-    echo "CLEANING DIR: $OutDir"
-    find "${OutDir}" -name "*.md" -exec rm {} +
-}
-
-process_subdirectories() {
-    shopt -s nullglob # Stops infinite loops if there are no matching files
-    echo "PROCESSING SUBDIRS OF: ${1}"
-    subdirs=( "${1%/}"/*/ )
-    for dir in "${subdirs[@]}"; do
-        echo "PROCESSING: $dir"
-        ( process_directory "${dir}" )
-        echo "DONE PROCESSING: $dir"
-    done
-}
-
-process_files() {
-    echo "PROCESS $1"
-    shopt -s nullglob # If there's no matches, don't return any
-    echo "LALA"
-    echo ${1%/}/*
-    files=( "${1%/}"/* )
-    echo "FILES: ${files[@]}"
-    shift
-    for file in "${files[@]}"; do
-        if [ -f "$file" ]; then
-            process_file "${file}" "$@"
+    for Filter in "${FILTERS[@]}"; do
+        if [[ -e "$Filter" ]]; then
+            ( source "$Filter"
+            echo "Process ${DIRS[@]}"
+            process_DIRS )
+        else
+            echo "Filter $Filter not found"
         fi
     done
 }
+
+parse_args() {
+    # Defaults
+    OUTDIR="${PWD%/}/"
+    OUTEXT=".md"
+    MDIREXT=".mdir/"
+    FILTERS+=( "./clean.sh" )
+
+    # Parse
+    while [ "$#" -ne 0 ]; do
+        case $1 in
+            -o|--out|--output|--output_folder|--output_dir|--output_directory)
+                local tmp
+                case "$2" in 
+                    .|./)
+                        OUTDIR=( "${PWD%/}/" ) ;;
+                    ~|~/)
+                        OUTDIR=( "${HOME%/}/" );;
+                    *)
+                        OUTDIR="${2}" ;;
+                esac
+                shift 2 ;;
+            -x|--execute)
+                FILTERS+=( "${2}" )
+                shift 2 ;;
+            -h|--help)
+                usage ;;
+            -f)
+                MDIREXT="/"
+                shift ;;
+            # -+(f|r|s))
+                # echo "ERROR: ${2} is not supported... yet! (It's planned) "
+                # shift ;;
+            ./|.)
+                DIRS+=( "${PWD%/}/" ); shift ;;
+            ~|~/)
+                DIRS+=( "${HOME%/}/" ); shift;;
+            *)
+                DIRS+=( "${1%/}/" ); shift ;;
+        esac
+    done
+
+    # More defaults (currently just checks)
+    [[ ${#DIRS[@]} -eq 0 ]] && { echo "ERROR: No source folder."; usage; }
+    [[ ${#DIRS[@]} -ge 2 ]] && { echo "ERROR: Too many source folders."; usage; }
+    [[ ${#FILTERS[@]} -eq 1 ]] && { echo "ERROR: No filter."; usage; }
+}
+
+process_DIRS() {
+    echo "PROCESS_DIRS: ${DIRS[@]}"
+    for Dir in "${DIRS[@]}"; do
+        DirName="${Dir%${MDIREXT}}"
+        DirExt="${Dir#${DirName}}" # Needed to distinguish "x.mdir" from "mdir"
+        DirName="${DirName##/}"
+        if [[ -e "${Dir}" ]]; then
+            echo "${Dir}: Directory not found"
+        elif [[ -d "${Dir}" ]]; then
+            echo "${Dir}: Not a directory"
+        elif [[ "${DirExt}" == "${MDIREXT}" ]]; then
+            ( process_Dir "$@" )
+        else
+            process_subdirs "$@"
+        fi
+    done
+}
+
+process_subdirs() { (
+    shopt -s nullglob # Stops infinite loops if there are no subdirs
+    DIRS=( "${Dir%/}"/*/ )
+    process_DIRS "$@"
+) }
+
+process_FILES() { (
+    shopt -s nullglob # If there's no matches, don't return any
+    FILES=( "${Dir%/}"/* )
+    for File in "${FILES[@]}"; do
+        if [ -f "$File" ]; then
+            process_file "$@"
+        fi
+    done
+) }
 
 main "$@"
