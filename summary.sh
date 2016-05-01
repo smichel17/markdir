@@ -11,8 +11,8 @@ process_Dir() {
 }
 
 process_File() {
-    # echo -e "\n\n## $FileName\n\n >> $OutFile"
-    echo -e "\n\n## $FileName\n\n" >> "$OutFile"
+    # echo -e "\n## $FileName\n >> $OutFile"
+    echo -e "\n## $FileName\n" >> "$OutFile"
     # echo "cat $File >> $OutFile"
     cat "$File" >> "$OutFile"
 }

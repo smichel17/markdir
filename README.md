@@ -1,8 +1,6 @@
 # README
 
-
 ## About
-
 
 Markdir is an easy to use, flexible, and comprehensive standard for documentation.
 
@@ -18,9 +16,7 @@ Cool thing: If you're documenting software or other digital materials (except ma
 
 This documentation is itself written in Markdir.
 
-
 ## FAQ
-
 
 ### Why does Markdir exist?
 
@@ -40,17 +36,13 @@ Markdown is the [plain text](https://github.com/ginatrapani/todo.txt-cli/wiki/Th
 - One update per change
   - You shouldn't need to update your documentation in three different places each time you want to make a change. One .mdir file, one update, multiple views.
 
-
 ## Reference Implementation
-
 
 ### markdir.sh
 
 markdir.sh implements both the Markdir and Bubble views. It also implements a -f option which will process folders without the .mdir extension, so you can use pretty-looking folders. This does break the standard, but is acceptable if your documentation lives together and does not share a directory with other files.
 
-
 ## Specification
-
 
 - Folders must end with the .mdir extension
 - .mdir files are written in markdown format, despite the nonstandard extension
