@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# markdir.sh v0.9.1
+# markdir.sh v0.9.2
 
 # Copyright 2016 Stephen Michel
 
@@ -50,6 +50,9 @@ parse_args() {
     # Parse
     while [ "$#" -ne 0 ]; do
         case $1 in
+            -e|--extension)
+                OUTEXT="$2"
+                shift 2 ;;
             -o|--out|--output|--output_folder|--output_dir|--output_directory)
                 local tmp
                 case "$2" in 
@@ -66,13 +69,13 @@ parse_args() {
                 shift 2 ;;
             -h|--help)
                 usage ;;
-            -f)
-                MDIREXT=""
-                shift ;;
+            # -f)
+            #     MDIREXT=""
+            #     shift ;;
             # -+(f|r|s))
                 # echo "ERROR: ${2} is not supported... yet! (It's planned) "
                 # shift ;;
-            ./|.)
+            .|./)
                 DIRS+=( "${PWD%/}" ); shift ;;
             ./*)
                 DIRS+=( "${PWD%/}${1#.}" ); shift ;;
