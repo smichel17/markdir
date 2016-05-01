@@ -1,3 +1,5 @@
+# Notice: This documentation is out of date. It will be updated soon.
+
 Markdir is an easy to use, flexible, and comprehensive standard for documentation.
 
 All content appears in files _and folders_ with the .mdir extension. Mdir files are written in the markdown flavor of your choice (the Markdir author recommands pandoc).
