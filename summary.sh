@@ -1,21 +1,18 @@
-#!/bin/bash
+ARGS=( "$OUTDIR" )
 
 process_Dir() {
-    OutFile="${OutDir}${DirName}${OUTEXT}"
-    # echo -e "$DirName" >> "$OutFile"
-    echo "$DirName >> $OutFile"
-    process_subdirs
-    process_FILES
+    # echo "DIR"
+    [[ -e "${1}" ]] || mkdir -p "${1}"
+    OutFile="${1}/${DirName}${OUTEXT}"
+    echo "# $DirName" >> "$OutFile"
+    # echo "# $DirName >> $OutFile"
+    process_subdirs "${1}/${DirName}"
+    process_files # "${1}"
 }
 
-    # echo -e "# ${title}\n\n" >> "${1}"/README.md
-    # cat "${file}" >> "${1}"/"${file##*/}"
-
 process_File() {
-    echo "$File >> $OutFile"
-    echo "FileName: $FileName"
-
-    # printf "## ${1}\n\n" >> "${OutFile}"
-    # cat "${2}" >> "${3}"
-    # printf "\n" >> "${3}"
+    # echo -e "\n\n## $FileName\n\n >> $OutFile"
+    echo -e "\n\n## $FileName\n\n" >> "$OutFile"
+    # echo "cat $File >> $OutFile"
+    cat "$File" >> "$OutFile"
 }

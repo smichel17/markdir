@@ -28,11 +28,12 @@ usage() {
 main() {
     DIRS=()
     FILTERS=()
+    ARGS=() # Currently unused unless a filter sets it
     parse_args "$@"
     for Filter in "${FILTERS[@]}"; do
         if [[ -e "$Filter" ]]; then (
             source "$Filter"
-            process_DIRS )
+            process_DIRS "${ARGS[@]}" )
         else
             echo "Filter $Filter not found"
         fi
@@ -41,9 +42,9 @@ main() {
 
 parse_args() {
     # Defaults
-    OUTDIR="${PWD%/}/"
+    OUTDIR="${PWD%/}"
     OUTEXT=".md"
-    MDIREXT=".mdir/"
+    MDIREXT=".mdir"
     FILTERS+=( "./clean.sh" )
 
     # Parse
@@ -53,9 +54,9 @@ parse_args() {
                 local tmp
                 case "$2" in 
                     .|./)
-                        OUTDIR=( "${PWD%/}/" ) ;;
+                        OUTDIR=( "${PWD%/}" ) ;;
                     ~|~/)
-                        OUTDIR=( "${HOME%/}/" );;
+                        OUTDIR=( "${HOME%/}" );;
                     *)
                         OUTDIR="${2}" ;;
                 esac
@@ -66,17 +67,19 @@ parse_args() {
             -h|--help)
                 usage ;;
             -f)
-                MDIREXT="/"
+                MDIREXT=""
                 shift ;;
             # -+(f|r|s))
                 # echo "ERROR: ${2} is not supported... yet! (It's planned) "
                 # shift ;;
             ./|.)
-                DIRS+=( "${PWD%/}/" ); shift ;;
+                DIRS+=( "${PWD%/}" ); shift ;;
+            ./*)
+                DIRS+=( "${PWD%/}${1#.}" ); shift ;;
             ~|~/)
-                DIRS+=( "${HOME%/}/" ); shift;;
+                DIRS+=( "${HOME%/}" ); shift;;
             *)
-                DIRS+=( "${1%/}/" ); shift ;;
+                DIRS+=( "${1%/}" ); shift ;;
         esac
     done
 
@@ -86,13 +89,20 @@ parse_args() {
     [[ ${#FILTERS[@]} -eq 1 ]] && { echo "ERROR: No filter."; usage; }
 }
 
+process_subdirs() { (
+    shopt -s nullglob # Stops infinite loops if there are no subdirs
+    DIRS=( "${Dir%/}"/*/ )
+    DIRS=( "${DIRS[@]%/}" )
+    process_DIRS "$@"
+) }
+
 process_DIRS() {
-    for Dir in "${DIRS[@]}"; do
-        DirName="${Dir%${MDIREXT}}"
-        DirExt="${Dir#${DirName}}" # Needed to distinguish "x.mdir" from "mdir"
-        DirName="${DirName##/}"
+    for Dir in "${DIRS[@]%/}"; do
+        FullDirName="${Dir##*/}"
+        DirName="${FullDirName%${MDIREXT}}"
+        DirExt="${FullDirName#${DirName}}" # Needed to distinguish "x.mdir" from "mdir"
         if [[ ! -e "${Dir}" ]]; then
-            echo "${Dir}: Directory not found"
+            echo "ERROR: ${Dir} not found"
         elif [[ ! -d "${Dir}" ]]; then
             echo "${Dir}: Not a directory"
         elif [[ "${DirExt}" == "${MDIREXT}" ]]; then
@@ -103,21 +113,9 @@ process_DIRS() {
     done
 }
 
-process_subdirs() { (
-    shopt -s nullglob # Stops infinite loops if there are no subdirs
-    DIRS=( "${Dir%/}"/*/ )
-    process_DIRS "$@"
-) }
-
-process_FILES() {
-    for File in "${FILES[@]}"; do
-        if [ -f "$File" ]; then
-            FullFileName="${File##/}"
-            FileName="${FullFileName%%.*}"
-            FileExt="${FullFileName#${FileName}}" # Tell "x.mdir" from "mdir"
-            ( process_File "$@" )
-        fi
-    done
+process_Dir() {
+    process_subdirs
+    process_files
 }
 
 process_files() { (
@@ -126,5 +124,19 @@ process_files() { (
     process_FILES "$@"
 ) }
 
+process_FILES() {
+    for File in "${FILES[@]}"; do
+        if [ -f "$File" ]; then
+            FullFileName="${File##*/}"
+            FileName="${FullFileName%.*}"
+            FileExt="${FullFileName#${FileName}}" # Tell "x.mdir" from "mdir"
+            ( process_File "$@" )
+        fi
+    done
+}
+
+process_File() {
+    echo "FILE: $File"
+}
 
 main "$@"
