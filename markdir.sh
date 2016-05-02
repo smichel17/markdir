@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# markdir.sh v0.9.2
+# markdir.sh v0.9.3
 
 # Copyright 2016 Stephen Michel
 
