@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# markdir.sh v0.9.2
+# markdir.sh v0.9.3
 
 # Copyright 2016 Stephen Michel
 
@@ -30,14 +30,11 @@ main() {
     FILTERS=()
     ARGS=() # Currently unused unless a filter sets it
     parse_args "$@"
-    for Filter in "${FILTERS[@]}"; do
-        if [[ -e "$Filter" ]]; then (
-            source "$Filter"
-            process_DIRS "${ARGS[@]}" )
-        else
-            echo "Filter $Filter not found"
-        fi
-    done
+    for Filter in "${FILTERS[@]}"; do (
+        source "$Filter" \
+            && process_DIRS "${ARGS[@]}" \
+            || echo "Filter $Filter not found"
+    ) done
 }
 
 parse_args() {
@@ -45,51 +42,48 @@ parse_args() {
     OUTDIR="${PWD%/}"
     OUTEXT=".md"
     MDIREXT=".mdir"
-    FILTERS+=( "./clean.sh" )
+    SRCEXT=".md"
 
     # Parse
     while [ "$#" -ne 0 ]; do
         case $1 in
             -e|--extension)
                 OUTEXT="$2"
-                shift 2 ;;
-            -o|--out|--output|--output_folder|--output_dir|--output_directory)
-                local tmp
-                case "$2" in 
-                    .|./)
-                        OUTDIR=( "${PWD%/}" ) ;;
-                    ~|~/)
-                        OUTDIR=( "${HOME%/}" );;
-                    *)
-                        OUTDIR="${2}" ;;
-                esac
-                shift 2 ;;
+                shift ;;
             -x|--execute)
                 FILTERS+=( "${2}" )
-                shift 2 ;;
+                shift ;;
+            -c|--clean)
+                FILTERS+=( "clean.sh" ) ;;
+            -l|--local)
+                FILTERS[1]="./clean.sh" ;;
             -h|--help)
                 usage ;;
-            # -f)
-            #     MDIREXT=""
-            #     shift ;;
+            -f)
+                MDIREXT="" ;;
             # -+(f|r|s))
                 # echo "ERROR: ${2} is not supported... yet! (It's planned) "
                 # shift ;;
+            *.sh)
+                FILTERS+=( "${1}" ) ;;
             .|./)
-                DIRS+=( "${PWD%/}" ); shift ;;
+                DIRS+=( "${PWD%%/}" ) ;;
             ./*)
-                DIRS+=( "${PWD%/}${1#.}" ); shift ;;
+                DIRS+=( "${PWD%%/}${1#.}" ) ;;
             ~|~/)
-                DIRS+=( "${HOME%/}" ); shift;;
+                DIRS+=( "${HOME%%/}" ) ;;
             *)
-                DIRS+=( "${1%/}" ); shift ;;
+                DIRS+=( "${1%%/}" ) ;;
         esac
+        shift
     done
+
+    OUTDIR=( ${DIRS[-1]} )
+    unset DIRS[-1]
 
     # More defaults (currently just checks)
     [[ ${#DIRS[@]} -eq 0 ]] && { echo "ERROR: No source folder."; usage; }
-    [[ ${#DIRS[@]} -ge 2 ]] && { echo "ERROR: Too many source folders."; usage; }
-    [[ ${#FILTERS[@]} -eq 1 ]] && { echo "ERROR: No filter."; usage; }
+    [[ ${#FILTERS[@]} -eq 0 ]] && { echo "ERROR: No filter."; usage; }
 }
 
 process_subdirs() { (
@@ -123,16 +117,23 @@ process_Dir() {
 
 process_files() { (
     shopt -s nullglob # If there's no matches, don't return any
-    FILES=( "${Dir%/}"/* )
+    FILES=()
+    tmp=( "${Dir%/}"/* )
+    for f in "${tmp[@]}"; do
+        if [ -f "$f" ]; then
+            FILES+=( "$f" )
+        fi
+    done
     process_FILES "$@"
 ) }
 
 process_FILES() {
     for File in "${FILES[@]}"; do
-        if [ -f "$File" ]; then
-            FullFileName="${File##*/}"
-            FileName="${FullFileName%.*}"
-            FileExt="${FullFileName#${FileName}}" # Tell "x.mdir" from "mdir"
+        FilePath="${File%/*}"
+        FullFileName="${File##*/}"
+        FileName="${FullFileName%.*}"
+        FileExt="${FullFileName#${FileName}}" # Tell "x.mdir" from "mdir"
+        if [[ "$FileExt" == "$SRCEXT" ]]; then
             ( process_File "$@" )
         fi
     done
