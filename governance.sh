@@ -17,6 +17,6 @@ process_Dir() {
 }
 
 process_File() {
-    echo -e "\n## $FileName\n" >> "${OutFile}_"
+    echo -e "\n## ${FileName#*_}\n" >> "${OutFile}_"
     cat "$File" >> "${OutFile}_"
 }
