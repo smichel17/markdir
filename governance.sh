@@ -5,6 +5,7 @@ process_Dir() {
     OutFile="${1}/${DirName}${OUTEXT}"
     echo "---" > "$OutFile"
     echo "title: $DirName" >> "$OutFile"
+    echo "toc: off" >> "$OutFile"
     echo -e "..." >> "$OutFile"
     process_files
     process_subdirs "${1}/${DirName}" "${2}/${DirName}"
