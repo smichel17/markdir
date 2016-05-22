@@ -2,7 +2,7 @@
 
 ## About
 
-# Notice: This documentation is out of date. It will be updated soon.
+# Notice: This documentation is out of date. It will be updated soon(TM)
 
 Markdir is an easy to use, flexible, and comprehensive standard for documentation.
 
